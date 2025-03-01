@@ -1,6 +1,3 @@
-下面是一份英文版的 README 文件示例，你可以将其保存为项目根目录下的 `README.md` 文件：
-
-```markdown
 # Debate Tournament Management System
 
 A complete debate tournament management system featuring both front-end and back-end components. This system allows administrators to manage tournament matches, update match details, set winners, and automatically advance teams through the bracket. At the same time, regular users can view the tournament bracket, vote for their favorite teams for the Best Popularity Award, and see real-time voting rankings. The project uses Vue 3 and Element Plus for the front-end, and Express with SQLite for the back-end.
@@ -153,10 +150,3 @@ The front-end is configured to use Axios with a base URL of `http://localhost:30
 
 - **Error Handling:**  
   API endpoints return appropriate HTTP status codes and error messages. The front-end uses Element Plus's message components to display errors and success notifications.
-
-## License
-
-This project is released under the MIT License.
-```
-
-以上 README 文件详细介绍了本项目的功能、安装、数据库初始化、运行方法及 API 接口说明。你可以根据实际情况进一步修改和补充说明。
