@@ -1,7 +1,6 @@
 <template>
   <div class="message-board">
     <h2>留言板</h2>
-    <!-- 留言输入表单 -->
     <div class="comment-form">
       <el-input
         class="comment-input"
@@ -12,7 +11,6 @@
         autosize />
       <el-button type="primary" @click="submitComment" :disabled="!canSubmit">提交</el-button>
     </div>
-    <!-- 管理员登录区域 -->
     <div class="admin-section">
       <div v-if="!adminStore.loggedIn" class="admin-login">
         <el-input v-model="adminUser" placeholder="管理员账号" class="admin-input" />
@@ -25,7 +23,6 @@
         <el-button type="warning" @click="adminLogout">退出</el-button>
       </div>
     </div>
-    <!-- 留言列表 -->
     <div class="comments-list">
       <div v-for="comment in displayedComments" :key="comment.id" class="comment-item">
         <el-card class="comment-card" :shadow="'always'">

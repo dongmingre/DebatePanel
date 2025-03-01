@@ -5,9 +5,9 @@ import Login from '../views/Login.vue';
 
 const routes = [
   { path: '/', redirect: '/schedule' },
-  { path: '/schedule', component: Schedule },    // 赛程页面
-  { path: '/vote', component: Vote },            // 投票页面
-  { path: '/login', component: Login }           // 管理员登录页面
+  { path: '/schedule', component: Schedule },
+  { path: '/vote', component: Vote },
+  { path: '/login', component: Login }
 ];
 
 const router = createRouter({

@@ -1,13 +1,11 @@
 <template>
   <div>
     <h3>最佳人气奖投票</h3>
-    <!-- 投票表单：单选列出所有队伍 -->
     <el-radio-group v-model="selectedTeam">
       <el-radio v-for="team in teams" :label="team.id" :key="team.id">{{ team.name }}</el-radio>
     </el-radio-group>
     <br />
     <el-button type="primary" @click="submitVote" :disabled="!selectedTeam">提交投票</el-button>
-    <!-- 人气排行榜 -->
     <div style="margin-top: 30px;">
       <h4>投票排行榜</h4>
       <el-table :data="results" style="width: 400px;">
@@ -30,7 +28,6 @@ export default defineComponent({
     const results = ref([]);
     const selectedTeam = ref(null);
     
-    // 获取队伍列表和当前投票结果
     const fetchTeamsAndResults = () => {
       axios.get('/api/teams').then(res => {
         teams.value = res.data;
@@ -39,13 +36,12 @@ export default defineComponent({
         results.value = res.data;
       });
     };
-    // 提交投票
     const submitVote = () => {
       if (!selectedTeam.value) return;
       axios.post('/api/votes/popularity', { teamId: selectedTeam.value })
         .then(res => {
           ElMessage.success('投票成功！');
-          fetchTeamsAndResults();  // 刷新排行榜
+          fetchTeamsAndResults();
         })
         .catch(err => {
           if (err.response && err.response.status === 403) {

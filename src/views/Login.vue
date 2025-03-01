@@ -36,10 +36,8 @@
           .then(res => {
             ElMessage.success('登录成功');
             const token = res.data.token;
-            // 保存令牌并设置 Axios 请求头
             localStorage.setItem('token', token);
             axios.defaults.headers.common['Authorization'] = 'Bearer ' + token;
-            // 跳转到赛程页面
             router.push('/schedule');
           })
           .catch(err => {
