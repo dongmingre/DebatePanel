@@ -18,6 +18,7 @@
     "pinia": "^3.0.1",
     "sqlite3": "^5.1.7",
     "vue": "^3.5.13",
+    "vue-debate": "file:",
     "vue-router": "^4.5.0",
     "vue-tournament-bracket": "^3.0.0"
   },
