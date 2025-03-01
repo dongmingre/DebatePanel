@@ -4,7 +4,7 @@ import Vote from '../views/Vote.vue';
 import Login from '../views/Login.vue';
 
 const routes = [
-  { path: '/', redirect: '/schedule' },
+  { path: '/', redirect: '/vote' },
   { path: '/schedule', component: Schedule },
   { path: '/vote', component: Vote },
   { path: '/login', component: Login }

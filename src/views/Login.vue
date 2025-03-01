@@ -38,7 +38,7 @@
             const token = res.data.token;
             localStorage.setItem('token', token);
             axios.defaults.headers.common['Authorization'] = 'Bearer ' + token;
-            router.push('/schedule');
+            router.push('/vote');
           })
           .catch(err => {
             ElMessage.error(err.response?.data?.error || '登录失败');

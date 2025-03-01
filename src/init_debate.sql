@@ -1,5 +1,5 @@
 -- 开启外键约束（可选）
-PRAGMA foreign_keys = ON;
+PRAGMA foreign_keys = OFF;
 
 -- 创建队伍表
 CREATE TABLE teams (
