@@ -5,39 +5,24 @@
         <h2 class="neon-title">
           <span class="flicker">2025</span>
           安徽理工大学
-          <span class="glitch" data-text="「校庆杯」">「校庆杯」</span>
+          <span class="glitch" data-text="&quot;校庆杯&quot;">&quot;校庆杯&quot;</span>
           校辩论赛<span class="cyberpunk">OnlinePanel</span>
         </h2>
         <div class="nav-links">
-          <router-link 
-            to="/vote" 
-            class="hologram-btn"
-            data-text="">
-            投票系统
-          </router-link>
-          <router-link 
-            to="/schedule" 
-            class="hologram-btn"
-            data-text="">
-            赛事进程
-          </router-link>
+          <router-link to="/home">首页</router-link>
+          <router-link to="/schedule">赛程</router-link>
+          <router-link to="/vote" class="hologram-btn">投票</router-link>
+          <router-link to="/message">留言板</router-link>
           <template v-if="!isAdmin">
-            <router-link 
-              to="/login" 
-              class="admin-portal"
-              data-text="">
+            <router-link to="/login" class="admin-portal">
               <span class="scanline"></span>
-              控制台入口
+              管理员入口
             </router-link>
           </template>
           <template v-else>
             <div class="admin-panel">
               <span class="cyber-admin">ADMIN#ROOT</span>
-              <el-button 
-                type="danger" 
-                size="small" 
-                class="cyber-logout"
-                @click="logout">
+              <el-button type="danger" size="small" class="cyber-logout" @click="logout">
                 <span class="pulse"></span>
                 安全登出
               </el-button>
@@ -53,8 +38,22 @@
   </el-container>
 </template>
 
-<script>
-// 保持原有脚本逻辑不变
+<script setup>
+import { ref } from 'vue'
+import { useRouter } from 'vue-router'
+
+const router = useRouter()
+const isAdmin = ref(false)
+
+const login = () => {
+  isAdmin.value = true
+  router.push('/admin')
+}
+
+const logout = () => {
+  isAdmin.value = false
+  router.push('/home')
+}
 </script>
 
 <style scoped>
@@ -195,5 +194,32 @@
     rgba(16, 24, 39, 0.9) 0%,
     rgba(9, 14, 26, 0.9) 100%
   )!important;
+  min-height: calc(100vh - 60px);  /* 添加最小高度 */
+  color: #fff;  /* 添加文字颜色 */
+  padding: 20px;  /* 添加内边距 */
+}
+
+/* 添加原NavBar的样式 */
+.nav-links {
+  display: flex;  /* 添加flex布局 */
+  align-items: center;  /* 垂直居中 */
+  gap: 20px;  /* 添加间距 */
+}
+
+.nav-links a {
+  margin-right: 1rem;
+  text-decoration: none;
+  color: #fff;
+  transition: all 0.3s ease;  /* 修改过渡效果 */
+  padding: 8px 15px;  /* 添加内边距 */
+}
+
+.nav-links a.router-link-active {
+  color: #0ff;
+  text-shadow: 0 0 5px #0ff;
+}
+
+.nav-links a:hover {
+  color: #0ff;
 }
 </style>

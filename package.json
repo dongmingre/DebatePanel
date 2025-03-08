@@ -17,10 +17,13 @@
     "jsonwebtoken": "^9.0.2",
     "pinia": "^3.0.1",
     "sqlite3": "^5.1.7",
+    "three": "0.121.0",
+    "vanta": "0.5.24",
     "vue": "^3.5.13",
     "vue-debate": "file:",
     "vue-router": "^4.5.0",
-    "vue-tournament-bracket": "^3.0.0"
+    "vue-tournament-bracket": "^3.0.0",
+    "@element-plus/icons-vue": "^2.1.0"
   },
   "devDependencies": {
     "@vitejs/plugin-vue": "^5.2.1",

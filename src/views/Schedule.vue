@@ -1,6 +1,6 @@
 <template>
   <div class="cyber-tournament">
-    <h1 class="neon-title">2025年安徽理工大学"校庆杯"校辩论赛OnlinePanel</h1>
+    <h1 class="neon-title">2025年安徽理工大学&quot;校庆杯&quot;校辩论赛OnlinePanel</h1>
     
     <div class="bracket-wrapper">
       <div class="bracket-grid">
@@ -24,47 +24,69 @@
             :id="'match-' + match.id"
             :style="nodeStyle(roundIndex, matchIndex, round.matches.length)"
           >
-            <div class="cyber-card" :class="{ 'final-node': isFinalRound(round) }">
-              <div class="card-glows"></div>
-              
-              <div class="card-body">
-                <div class="debate-topic">
-                  <span class="hologram-icon">🗲</span>
-                  {{ match.topic }}
+            <el-popover
+              :visible="hoveredMatch === match.id"
+              placement="right"
+              trigger="hover"
+              :show-after="100"
+            >
+              <template #default>
+                <div class="match-detail">
+                  <h4>{{ formatRoundName(match.round) }} - 第{{ match.order_num }}场</h4>
+                  <p class="topic">{{ match.topic }}</p>
+                  <p class="time">时间：{{ formatTime(match.start_time) }}</p>
+                  <p class="location">地点：{{ match.location }}</p>
                 </div>
-
-                <!-- 队伍对战信息 -->
-                <div class="versus-container">
-                  <div class="team-display" :class="{ 'victory': isWinner(match, 1) }">
-                    <div class="team-name">{{ getTeam(match.team1_id) }}</div>
-                    <div class="team-score">{{ match.scores?.[0] || '—' }}</div>
-                  </div>
+              </template>
+              <template #reference>
+                <div 
+                  class="cyber-card"
+                  @mouseenter="hoveredMatch = match.id"
+                  @mouseleave="hoveredMatch = null"
+                >
+                  <div class="card-glows"></div>
                   
-                  <div class="vs-core">
-                    <div class="vs-bar"></div>
-                    <div class="vs-text">VS</div>
-                    <div class="vs-bar"></div>
-                  </div>
+                  <div class="card-body">
+                    <div class="debate-topic">
+                      <span class="hologram-icon">🗲</span>
+                      {{ match.topic }}
+                    </div>
 
-                  <div class="team-display" :class="{ 'victory': isWinner(match, 2) }">
-                    <div class="team-name">{{ getTeam(match.team2_id) }}</div>
-                    <div class="team-score">{{ match.scores?.[1] || '—' }}</div>
+                    <!-- 队伍对战信息 -->
+                    <div class="versus-container">
+                      <div class="team-display" :class="{ 'victory': isWinner(match, 1) }">
+                        <div class="team-name">{{ getTeam(match.team1_id) }}</div>
+                        <div class="team-score">{{ match.scores?.[0] || '—' }}</div>
+                      </div>
+                      
+                      <div class="vs-core">
+                        <div class="vs-bar"></div>
+                        <div class="vs-text">VS</div>
+                        <div class="vs-bar"></div>
+                      </div>
+
+                      <div class="team-display" :class="{ 'victory': isWinner(match, 2) }">
+                        <div class="team-name">{{ getTeam(match.team2_id) }}</div>
+                        <div class="team-score">{{ match.scores?.[1] || '—' }}</div>
+                      </div>
+                    </div>
+
+                    <!-- 比赛元信息 -->
+                    <div class="match-meta">
+                      <div class="meta-item">
+                        <span class="icon">⌛</span>
+                        <!-- {{ formatTime(match.start) }} -->
+                          {{ match.start || '2025年'}}
+                      </div>
+                      <div class="meta-item">
+                        <span class="icon">📍</span>
+                        {{ match.venue || 'AUST' }}
+                      </div>
+                    </div>
                   </div>
                 </div>
-
-                <!-- 比赛元信息 -->
-                <div class="match-meta">
-                  <div class="meta-item">
-                    <span class="icon">⌛</span>
-                    {{ formatTime(match.start) }}
-                  </div>
-                  <div class="meta-item">
-                    <span class="icon">📍</span>
-                    {{ match.venue || '元宇宙竞技场' }}
-                  </div>
-                </div>
-              </div>
-            </div>
+              </template>
+            </el-popover>
 
             <!-- 连接线锚点 -->
             <div class="line-anchor prev" v-if="roundIndex > 0"></div>
@@ -86,160 +108,211 @@
   </div>
 </template>
 
-<script>
-import { defineComponent, ref, computed, onMounted, nextTick } from 'vue';
-import axios from 'axios';
+<script setup>
+import { ref, computed, onMounted, watchEffect, nextTick, onUnmounted } from 'vue'
+import { matchesApi } from '../api'
+import axios from 'axios'
 
-export default defineComponent({
-  name: 'CyberBracket',
-  setup() {
-    // 核心数据
-    const matches = ref([]);
-    const teams = ref([]);
-    const connectionPaths = ref([]);
-    const containerWidth = ref(1200);
-    const baseSpacing = 200;
+const matches = ref([])
+const loading = ref(false)
+const hoveredMatch = ref(null)
+const processedRounds = ref([])  // 添加这个响应式变量
+const connectionPaths = ref([])
+const containerWidth = ref(1200)
+// 修改基础间距为更小的值
+const baseSpacing = 80  // 从 200 改为 120
+const teams = ref([])
 
-    // 配置参数
-    const chineseNumbers = ['零', '一', '二', '三', '四', '五', '六', '七', '八'];
-    const totalRounds = computed(() => Math.max(...processedRounds.value.map(r => r.round)) || 0);
+// 配置参数
+const chineseNumbers = ['零', '一', '二', '三', '四', '五', '六', '七', '八']
+const totalRounds = computed(() => {
+  const maxRound = Math.max(...(processedRounds.value?.map(r => r.round) || [0]))
+  return maxRound || 0
+})
 
-    // 处理后的轮次数据
-    const processedRounds = computed(() => {
-      const rounds = {};
-      matches.value.forEach(match => {
-        const round = match.round || 1;
-        if (!rounds[round]) rounds[round] = [];
-        rounds[round].push(match);
-      });
-      return Object.entries(rounds)
-        .map(([round, matches]) => ({
-          round: parseInt(round),
-          matches: matches.sort((a, b) => a.order - b.order)
-        }))
-        .sort((a, b) => a.round - b.round);
-    });
-
-    // 列布局样式
-    const columnStyle = (index) => {
-      const offset = (containerWidth.value - baseSpacing) / (totalRounds.value - 1) * index;
-      return {
-        left: `${baseSpacing / 2 + offset}px`,
-        width: `${baseSpacing}px`
-      };
-    };
-
-    // 节点定位
-    const nodeStyle = (roundIndex, matchIndex, total) => {
-      const baseGap = 100 / (total + 1);
-      // 增加一个放大系数，例如 1.2 倍
-      const adjustedGap = baseGap * 2.2;
-      return {
-        top: `${adjustedGap * (matchIndex + 1)}%`,
-        height: `${baseGap}%`
-      };
-    };
-
-    // 队伍信息
-    const getTeam = (teamId) => {
-      return teams.value.find(t => t.id === teamId)?.name || `战队${teamId}`;
-    };
-
-    // 胜负判定
-    const isWinner = (match, team) => {
-      return match.winner_id === (team === 1 ? match.team1_id : match.team2_id);
-    };
-
-    // 连接线生成
-    const generateConnections = async () => {
-      await nextTick();
-      const paths = [];
-      
-      processedRounds.value.forEach((round, roundIndex) => {
-        if (roundIndex === 0) return;
-
-        round.matches.forEach((match, matchIndex) => {
-          const prevRound = processedRounds.value[roundIndex - 1].matches;
-          const sourceIndex = matchIndex * 2;
-          
-          [prevRound[sourceIndex], prevRound[sourceIndex + 1]].forEach((sourceMatch, i) => {
-            if (!sourceMatch) return;
-
-            const sourceNode = document.getElementById(`match-${sourceMatch.id}`);
-            const targetNode = document.getElementById(`match-${match.id}`);
-            if (!sourceNode || !targetNode) return;
-
-            const sourceRect = sourceNode.getBoundingClientRect();
-            const targetRect = targetNode.getBoundingClientRect();
-            const offsetX = containerWidth.value / 2 - window.innerWidth / 2;
-
-            const path = `
-              M ${sourceRect.right - offsetX} ${sourceRect.top + sourceRect.height / 2}
-              C ${sourceRect.right - offsetX + 150} ${sourceRect.top + sourceRect.height / 2},
-                ${targetRect.left - offsetX - 150} ${targetRect.top + targetRect.height / 2},
-                ${targetRect.left - offsetX} ${targetRect.top + targetRect.height / 2}
-            `;
-            paths.push(path);
-          });
-        });
-      });
-
-      connectionPaths.value = paths;
-    };
-
-    // 初始化数据
-    const initialize = async () => {
-      try {
-        const [matchesRes, teamsRes] = await Promise.all([
-          axios.get('/api/matches'),
-          axios.get('/api/teams')
-        ]);
-        matches.value = matchesRes.data;
-        teams.value = teamsRes.data;
-        containerWidth.value = document.querySelector('.bracket-grid')?.offsetWidth || 1200;
-        generateConnections();
-      } catch (error) {
-        console.error('数据初始化失败:', error);
-      }
-    };
-
-    // 生命周期
-    onMounted(() => {
-      initialize();
-      window.addEventListener('resize', () => {
-        containerWidth.value = document.querySelector('.bracket-grid')?.offsetWidth || 1200;
-        generateConnections();
-      });
-    });
-
-    return {
-      processedRounds,
-      chineseNumbers,
-      columnStyle,
-      nodeStyle,
-      getTeam,
-      isWinner,
-      connectionPaths,
-      isFinalRound: (round) => round.round === totalRounds.value,
-      getRoundStatus: (round) => {
-        const total = totalRounds.value;
-        return `晋级进度 ${Math.round((round.round / total) * 100)}%`;
-      },
-      formatTime: (date) => new Date(date).toLocaleString('zh-CN', {
-        month: '2-digit',
-        day: '2-digit',
-        hour: '2-digit',
-        minute: '2-digit'
-      })
-    };
+const fetchMatches = async () => {
+  loading.value = true
+  try {
+    const res = await matchesApi.getAllMatches()
+    matches.value = res.data.data // 修正数据结构访问
+    processedRounds.value = processMatches(matches.value) // 初始处理数据
+  } catch (error) {
+    console.error('加载赛程失败:', error)
+  } finally {
+    loading.value = false
   }
-});
+}
+
+const fetchTeams = async () => {
+  try {
+    const { data } = await axios.get('http://localhost:3000/api/teams')
+    teams.value = data
+  } catch (error) {
+    console.error('获取队伍列表失败:', error)
+  }
+}
+
+const processMatches = (matchesData) => {
+  if (!Array.isArray(matchesData)) return []
+  
+  const rounds = {}
+  matchesData.forEach(match => {
+    const round = match.round || 1
+    if (!rounds[round]) rounds[round] = []
+    rounds[round].push({
+      ...match,
+      id: match.id,
+      round: match.round,
+      order_num: match.order_num,
+      team1: match.team1_name || '待定',
+      team2: match.team2_name || '待定',
+      start: match.start_time,
+      venue: match.location,
+      topic: match.topic || '待定'
+    })
+  })
+
+  return Object.entries(rounds)
+    .map(([round, matches]) => ({
+      round: parseInt(round),
+      matches: matches.sort((a, b) => (a.order_num || 0) - (b.order_num || 0))
+    }))
+    .sort((a, b) => a.round - b.round)
+}
+
+// 修改列布局样式计算
+const columnStyle = (index) => {
+  const totalWidth = Math.min(1000, containerWidth.value)  // 限制最大宽度
+  const offset = (totalWidth - baseSpacing) / (totalRounds.value - 1) * index
+  return {
+    left: `${baseSpacing / 2 + offset}px`,
+    width: `${baseSpacing}px`,
+    // 添加最小宽度确保内容不会太挤
+    minWidth: '100px'
+  }
+}
+
+// 节点定位
+const nodeStyle = (roundIndex, matchIndex, total) => {
+  const baseGap = 100 / (total + 1)
+  const adjustedGap = baseGap * 2.2
+  return {
+    top: `${adjustedGap * (matchIndex + 1)}%`,
+    height: `${baseGap}%`
+  }
+}
+
+// 添加获取比赛状态的方法
+const getRoundStatus = (round) => {
+  const total = totalRounds.value
+  return `晋级进度 ${Math.round((round.round / total) * 100)}%`
+}
+
+// 添加格式化时间的方法
+const formatTime = (time) => {
+  if (!time) return '待定'
+  return new Date(time).toLocaleString('zh-CN', {
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit'
+  })
+}
+
+// 判断胜者
+const isWinner = (match, teamNum) => {
+  if (!match.winner_id) return false
+  return match.winner_id === (teamNum === 1 ? match.team1_id : match.team2_id)
+}
+
+// 添加获取队伍函数
+const getTeam = (teamId) => {
+  const team = teams.value.find(t => t.id === teamId)
+  return team ? team.name : `队伍${teamId}`
+}
+
+// 添加格式化轮次名称的函数
+const formatRoundName = (round) => {
+  const names = ['初赛', '淘汰赛', '半决赛', '决赛']
+  return names[round - 1] || `第${round}轮`
+}
+
+// 生成连接线
+const generateConnections = async () => {
+  if (!processedRounds.value?.length) return
+  
+  await nextTick()
+  const paths = []
+  
+  processedRounds.value.forEach((round, roundIndex) => {
+    if (roundIndex === 0) return
+    
+    round.matches.forEach((match, matchIndex) => {
+      const prevRound = processedRounds.value[roundIndex - 1]?.matches
+      if (!prevRound) return
+      
+      const sourceIndex = matchIndex * 2
+      const sources = [prevRound[sourceIndex], prevRound[sourceIndex + 1]]
+      
+      sources.forEach(sourceMatch => {
+        if (!sourceMatch || !match) return
+        
+        const sourceEl = document.getElementById(`match-${sourceMatch.id}`)
+        const targetEl = document.getElementById(`match-${match.id}`)
+        if (!sourceEl || !targetEl) return
+        
+        const sourceRect = sourceEl.getBoundingClientRect()
+        const targetRect = targetEl.getBoundingClientRect()
+        const containerRect = document.querySelector('.bracket-grid').getBoundingClientRect()
+        
+        const path = `
+          M ${sourceRect.right - containerRect.left} ${sourceRect.top + sourceRect.height / 2}
+          C ${sourceRect.right - containerRect.left + 50} ${sourceRect.top + sourceRect.height / 2},
+            ${targetRect.left - containerRect.left - 50} ${targetRect.top + targetRect.height / 2},
+            ${targetRect.left - containerRect.left} ${targetRect.top + targetRect.height / 2}
+        `
+        paths.push(path)
+      })
+    })
+  })
+  
+  connectionPaths.value = paths
+}
+
+watchEffect(() => {
+  if (matches.value?.length > 0) {
+    processedRounds.value = processMatches(matches.value)
+    nextTick(() => {
+      generateConnections()
+    })
+  }
+})
+
+onMounted(async () => {
+  try {
+    await fetchTeams()
+    await fetchMatches()
+    window.addEventListener('resize', () => {
+      containerWidth.value = document.querySelector('.bracket-grid')?.offsetWidth || 1200
+      nextTick(() => {
+        generateConnections()
+      })
+    })
+  } catch (error) {
+    console.error('初始化失败:', error)
+  }
+})
+
+// 添加 onUnmounted 清理事件监听
+onUnmounted(() => {
+  window.removeEventListener('resize', generateConnections)
+})
 </script>
 
 <style scoped>
 .cyber-tournament {
-  /* background: radial-gradient(ellipse at center, #0a0c1a 0%, #020308 100%); */
-  background: url('src/images/bg.jpg') no-repeat center center;
+  /* background options */
+  background: url('@/images/bg.jpg') no-repeat center center;
   background-size: cover;
   min-height: 100vh;
   padding: 2rem;
@@ -259,9 +332,10 @@ export default defineComponent({
   left: 0;
 }
 
+/* Adjust bracket wrapper spacing */
 .bracket-wrapper {
   position: relative;
-  min-width: 1200px;
+  min-width: 1000px; 
   margin: 0 auto;
 }
 
@@ -281,7 +355,7 @@ export default defineComponent({
 .round-header {
   position: relative; 
   top: 0px;
-  width: 100%;
+  width: 200%;
   text-align: center;
 }
 
@@ -315,7 +389,7 @@ export default defineComponent({
   box-shadow: 0 0 30px rgba(0, 247, 255, 0.1);
   position: relative;
   transition: transform 0.3s ease, box-shadow 0.3s ease;
-  min-width: 9cm;
+  min-width: 10cm;
 }
 
 .cyber-card:hover {
@@ -353,6 +427,7 @@ export default defineComponent({
   filter: drop-shadow(0 0 5px #00f7ff);
 }
 
+/* Column spacing adjustments */
 .versus-container {
   display: flex;
   align-items: center;
@@ -449,6 +524,31 @@ export default defineComponent({
   animation: lineFlow 3s linear infinite;
 }
 
+.match-detail {
+  padding: 15px;
+  background: rgba(0, 255, 255, 0.05);
+  border-radius: 8px;
+  color: #fff;
+}
+
+.match-detail h4 {
+  color: #0ff;
+  margin: 0 0 10px;
+}
+
+.match-detail .topic {
+  font-size: 1.1em;
+  margin: 10px 0;
+  color: #fff;
+}
+
+.match-detail .time,
+.match-detail .location {
+  font-size: 0.9em;
+  color: rgba(255, 255, 255, 0.8);
+  margin: 5px 0;
+}
+
 @keyframes hologram {
   0% { background-position: -100% 0; }
   100% { background-position: 200% 0; }
@@ -492,4 +592,25 @@ export default defineComponent({
     transform: scale(0.95);
   }
 }
+
+/* Deep selector fixes */
+:deep(.el-table) {
+  background: transparent;
+  color: #fff;
+}
+
+:deep(.el-table th),
+:deep(.el-table tr) {
+  background: transparent;
+}
+
+:deep(.el-table td) {
+  border-bottom: 1px solid rgba(0, 255, 255, 0.1);
+}
+
+:deep(.el-card__header) {
+  border-bottom: 1px solid rgba(0, 255, 255, 0.2);
+}
+
+/* 其他样式保持不变 */
 </style>
