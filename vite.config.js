@@ -67,6 +67,6 @@ export default defineConfig({
       }
     }
   },
-  // 配置生产环境的基础路径
-  base: '/',
+  // 更新生产环境配置
+  base: process.env.NODE_ENV === 'production' ? '/' : '/',
 })
