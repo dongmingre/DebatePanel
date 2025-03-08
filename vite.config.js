@@ -50,7 +50,6 @@ export default defineConfig({
   build: {
     outDir: 'dist',
     assetsDir: 'assets',
-    // 生产环境移除 console
     minify: 'terser',
     terserOptions: {
       compress: {
@@ -58,6 +57,15 @@ export default defineConfig({
         drop_debugger: true,
       },
     },
+    // Add this to ensure proper chunk handling
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          'element-plus': ['element-plus'],
+          'vue': ['vue', 'vue-router']
+        }
+      }
+    }
   },
   // 配置生产环境的基础路径
   base: '/',
